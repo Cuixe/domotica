@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <meta charset=utf-8>
+    <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+    <meta name="twitter:widgets:csp" content="on">
+    <title>Sockets</title>
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="bootstrap-switch/css/bootstrap-switch.min.css">
+    <script src="scripts/jquery-3.1.1.min.js" ></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="bootstrap-switch/js/bootstrap-switch.min.js"> </script>
+    <script type="application/javascript">
+
+        var sockets={};
+
+        function init() {
+
+            $.getJSON({
+                url:"http://localhost:8000/domotica/sockets/",
+                success:function(json) {
+                    sockets = json;
+                    renderOptions(json)
+                },
+                error:function(args, abs){
+                    console.log("Error: " + abs);
+                }
+            });
+        }
+
+        function renderOptions(data) {
+            var container = $("#sockets");
+            for (var i = 0; i < data.length; i++) {
+                var jSocket = data[i];
+                var socketName =jSocket.name;
+                var listContainer = createListContainer("Socket " + jSocket.id);
+                var check = $('<input/>').attr({
+                    type: "checkbox",
+                    id: jSocket.id,
+                    name: socketName,
+                    checked: jSocket.status
+                });
+                sockets["socket"+jSocket.id] = jSocket;
+                listContainer.append(check);
+                container.append(listContainer);
+                check.on("switchChange.bootstrapSwitch", function(event, state) {
+                    var data =sockets["socket"+this.id];
+                    data.status = state;
+                    update(data.id, data);
+                });
+                check.bootstrapSwitch();
+            }
+        }
+
+        function createListContainer(text) {
+            var label = $('<label>').attr({class:'control-label col-sm-2'}).text(text);
+            var list = $('<li></li>').attr({class:'list-group-item'});
+            list.append(label);
+            return list;
+        }
+
+        function createText() {
+
+        }
+
+        function addCheck(check) {
+            var container = $("#sockets");
+            var listElement = $('<li></li>').attr({class:'list-group-item'});
+            listElement.append(check);
+            container.append(listElement);
+        }
+
+        function update(id, data) {
+            $.ajax({
+                url: 'http://localhost:8000/domotica/sockets/' + id + '/',
+                data: data,
+                method:'PUT',
+                dataType: 'json',
+                password:'Cuixe360',
+                username:'alverik',
+                success: function(result) {
+                    console.log(result);
+                }
+            });
+        }
+    </script>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div id="principal" class="container">
+        <h1>Estado de los conectores</h1>
+        <ul id="sockets" class="list-group">
+        </ul>
+        <script type="application/javascript">
+            $(document).ready(function() {
+                jQuery.support.cors = true;
+                init();
+            });
+        </script>
+    </div>
+</body>
+</html>
