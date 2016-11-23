@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from django.db import models
+from raspberry import operation
 
 
 class Socket(models.Model):
@@ -11,3 +12,4 @@ class Socket(models.Model):
 
     def save(self, *args, **kwargs):
         super(Socket, self).save(*args, **kwargs)
+        operation(self.rapsPin, self.status)
