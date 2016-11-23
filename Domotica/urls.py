@@ -20,9 +20,8 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^domotica/admin/', admin.site.urls),
     url(r'^domotica/', include('api.urls')),
-    url(r'^ui/', include('html.urls')),
+    url(r'^', include('html.urls')),
 ]
 urlpatterns += [
-    url(r'^domotica/api-auth/', include('rest_framework.urls',
-                               namespace='rest_framework')),
+    url(r'^domotica/api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from django.db import models
 from raspberry import operation
+from django.utils import timezone
 
 
 class Socket(models.Model):
@@ -13,3 +14,12 @@ class Socket(models.Model):
     def save(self, *args, **kwargs):
         super(Socket, self).save(*args, **kwargs)
         operation(self.rapsPin, self.status)
+
+
+class SocketWorker(models.Model):
+    socket = models.ForeignKey(Socket, on_delete=models.CASCADE)
+    executionTime = models.DateTimeField(default=timezone.now)
+    newStatus = models.BooleanField(default=False)
+
+    def __init__(self, *args, **kwargs):
+        super(self, *args, **kwargs)
