@@ -1,15 +1,16 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
     <meta charset=utf-8>
     <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
     <meta name="twitter:widgets:csp" content="on">
     <title>Sockets</title>
-    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
-    <link rel="stylesheet" href="bootstrap/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="bootstrap-switch/css/bootstrap-switch.min.css">
-    <script src="scripts/jquery-3.1.1.min.js" ></script>
-    <script src="bootstrap/js/bootstrap.min.js"></script>
-    <script src="bootstrap-switch/js/bootstrap-switch.min.js"> </script>
+    <link rel="stylesheet" href="{% static 'html/bootstrap/css/bootstrap.css' %}">
+    <link rel="stylesheet" href="{% static 'html/bootstrap/css/bootstrap-theme.min.css' %}">
+    <link rel="stylesheet" href="{% static 'html/bootstrap-switch/css/bootstrap-switch.min.css' %}">
+    <script src="{% static 'html/scripts/jquery-3.1.1.min.js' %}" ></script>
+    <script src="{% static 'html/bootstrap/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'html/bootstrap-switch/js/bootstrap-switch.min.js' %}"> </script>
     <script type="application/javascript">
 
         var sockets={};
