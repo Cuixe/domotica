@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 from django.db import models
 from django.utils import timezone
-from raspberry.operations import operation
+from api.operations import operation
 
 
 class Pin(models.Model):
@@ -15,6 +15,10 @@ class Pin(models.Model):
     def __str__(self):
         return "Pin " + str(self.pin_number)
 
+    def save(self, *args, **kwargs):
+        operation(self.pin_number, self.output)
+        super(Pin, self).save(*args, **kwargs)
+
 
 class Socket(models.Model):
     owner = models.ForeignKey('auth.User', related_name='snippets', on_delete=models.CASCADE)
@@ -24,12 +28,10 @@ class Socket(models.Model):
 
     def __str__(self):
         return self.name
-"""
+
     def save(self, *args, **kwargs):
         super(Socket, self).save(*args, **kwargs)
         operation(self.rapsPin, self.status)
-"""
-
 
 
 class Event(models.Model):

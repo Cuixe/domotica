@@ -18,7 +18,7 @@
         function init() {
 
             $.getJSON({
-                url:"http://localhost:8000/domotica/sockets/",
+                url:"http://localhost:8000/api/sockets/",
                 success:function(json) {
                     sockets = json;
                     renderOptions(json)
@@ -69,7 +69,7 @@
 
         function update(data) {
             $.ajax({
-                url: 'http://localhost:8000/domotica/pin/' + data.id + '/',
+                url: 'http://localhost:8000/api/pin/' + data.id + '/',
                 data: data,
                 method:'PUT',
                 dataType: 'json',
