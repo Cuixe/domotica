@@ -1,47 +1,45 @@
-import threading, time
-from batch.models.SocketTask import SocketTask
+import threading
 from batch.dateutils import *
+from batch.domain import Task
+import math
+from collections import OrderedDict
 
-
-class TaskManager:
-    TASKS = []
-    MANAGER=None
+class Manager:
+    __QUEUED_TASK = {}
+    BEFORE_TASKS = {}
 
     def __init__(self):
-        TaskManager.MANAGER = Manager()
-        TaskManager.MANAGER.start()
+        pass
 
+    def start_tasks(self):
+        tasks = Task.get_task_list()
+        for task in tasks:
+            self.__create_new_timer_taks(task)
+        Manager.BEFORE_TASKS = OrderedDict(sorted(Manager.BEFORE_TASKS.items()))
 
-class Manager(threading.Thread):
+    def update_task(self, task_id):
+        Manager.__QUEUED_TASK[task_id].cancel()
+        task = Task.get_task(task_id, update=True)
+        self.__create_new_timer_taks(task)
+        self.execute_before_task()
 
-    def __init__(self, sleep_time=1):
-        threading.Thread.__init__(self, name="MANAGER")
-        self.tasks = SocketTask.get_socket_tasks()
-        self.sleep_time = sleep_time
-        self.queued_tasks = {}
+    def __create_new_timer_taks(self, task):
+        if str(datetime.today().weekday() + 1) in task.execution_days:
+            execution_time = cast_time_to_datetime(task.execution_time)
+            seconds = get_difference_in_seconds(execution_time, datetime.now())
+            if seconds > 0:
+                seconds = math.ceil(seconds)
+                timer = threading.Timer(interval=seconds, function=task.execute_tasks)
+                timer.name = "Task_" + str(task.id)
+                Manager.__QUEUED_TASK[task.id] = timer
+                timer.start()
+                timer.join()
+            else:
+                if seconds in Manager.BEFORE_TASKS:
+                    seconds += -.00001
+                    Manager.BEFORE_TASKS[seconds] = task
 
-    def invoque(self, task):
-        if task.new_status:
-            task.socket.turn_on()
-            print task.socket.name + " turned on"
-        else:
-            task.socket.turn_off()
-            print task.socket.name + " turned off"
-
-    def run(self):
-        i = 1
-        day = datetime.today().weekday() + 1
-        now = datetime.now()
-        index = 0;
-        while index < len(self.tasks):
-            task = self.tasks[index];
-            if str(day) in task.frequency:
-                execution_time = cast_time_to_datetime(task.execution_time)
-                seconds = get_seconds_diff_between_datetime(execution_time, now)
-                i += 1
-                seconds = i
-                if seconds > 0:
-                    timer = threading.Timer(seconds, self.invoque, (task,))
-                    self.queued_tasks[task.socket.name] = timer
-                    timer.start()
-            index += 1
+    def execute_before_task(self):
+        Manager.BEFORE_TASKS = OrderedDict(sorted(Manager.BEFORE_TASKS.items()))
+        for key, task in Manager.BEFORE_TASKS.iteritems():
+            task.execute_tasks()

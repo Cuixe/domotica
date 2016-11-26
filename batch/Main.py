@@ -1,5 +1,3 @@
-from batch.models.Socket import Socket
-from batch.models.SocketTask import SocketTask
 from batch.workers import Manager
 import datetime
 import time
