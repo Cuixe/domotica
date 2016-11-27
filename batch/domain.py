@@ -31,13 +31,13 @@ class Pin(Domain):
         self.output = True
         raspberry.call_pin(self.pin_number, self.output)
         self.__update()
-        logger.debug("Pin: " + str(self.pin_number) + " turned on")
+        logger.debug(logger_name="Pin", msg=("Pin: " + str(self.pin_number) + " turned on"))
 
     def turn_off(self):
         self.output = False
         raspberry.call_pin(self.pin_number, self.output)
         self.__update()
-        logger.debug("Pin: " + str(self.pin_number) + " turned off")
+        logger.debug(logger_name="Pin", msg=("Pin: " + str(self.pin_number) + " turned off"))
 
     def fill(self, query_result):
         self.id = query_result[0]

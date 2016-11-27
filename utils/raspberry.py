@@ -7,10 +7,10 @@ GPIO.setwarnings(False)
 
 
 def call_pin(pin_number=0, status=False):
-    logger.info(logger_name="GPIO", msg="Pin: " + str(pin_number) + " sending " + str(status))
-    """GPIO.setup(logger_name, GPIO.OUT)
+    logger.info(logger_name="GPIO", msg=("Pin: " + str(pin_number) + " sending " + str(status)))
+    """GPIO.setup(int(pin_number), GPIO.OUT)
     if status :
-        GPIO.output(logger_name, GPIO.HIGH)
+        GPIO.output(int(pin_number), GPIO.HIGH)
     else:
-        GPIO.output(logger_name, GPIO.LOW)
+        GPIO.output(int(pin_number), GPIO.LOW)
 """

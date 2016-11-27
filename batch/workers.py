@@ -23,6 +23,7 @@ class Manager:
         Manager.BEFORE_TASKS = OrderedDict(sorted(Manager.BEFORE_TASKS.items()))
         Manager.execute_before_task()
 
+
     @staticmethod
     def update_task(task_id=None, async=True):
         if async:
