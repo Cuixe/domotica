@@ -1,6 +1,6 @@
 import logging
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s %(levelname)s - %(name)s - %(message)s')
 loggers = {}
 __APP_LOGIN_LEVEL = logging.INFO
 
@@ -9,7 +9,7 @@ def __get_logger(logger_name="Domotica", loggin_level=logging.DEBUG):
     if logger_name not in loggers:
         logger = logging.getLogger(logger_name)
         logger.setLevel(__APP_LOGIN_LEVEL)
-        ch = logging.StreamHandler()
+        ch = logging.FileHandler(filename="Domotica.log")
         ch.setLevel(loggin_level)
         ch.setFormatter(formatter)
         logger.addHandler(ch)
