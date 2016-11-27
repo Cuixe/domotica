@@ -9,7 +9,8 @@ def __get_logger(logger_name="Domotica", loggin_level=logging.DEBUG):
     if logger_name not in loggers:
         logger = logging.getLogger(logger_name)
         logger.setLevel(__APP_LOGIN_LEVEL)
-        ch = logging.FileHandler(filename="Domotica.log")
+        #ch = logging.FileHandler(filename="Domotica.log")
+        ch = logging.StreamHandler()
         ch.setLevel(loggin_level)
         ch.setFormatter(formatter)
         logger.addHandler(ch)

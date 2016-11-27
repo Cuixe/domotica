@@ -12,6 +12,5 @@ class Main:
         else:
             Main.__INIT = True
             logger.info(logger_name="BATCH", msg="Iniciando Proceso Batch")
-            self.manager = Manager()
-            self.manager.start_tasks()
+            Manager.start_tasks()
 

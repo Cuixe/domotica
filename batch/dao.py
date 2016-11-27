@@ -1,15 +1,14 @@
 import sqlite3
 import os
+import MySQLdb
 from utils.logger import debug
 
-class DataSource(object):
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    base_dir = base_dir.replace("batch", "")
-    __DATABASE_PATH = os.path.join(base_dir, 'db.sqlite3')
-    __CALLS = 0
 
-    def __init__(self):
-        self.db = sqlite3.connect(DataSource.__DATABASE_PATH)
+class DataSource(object):
+    __DATA_SOURCE = None
+
+    #def __init__(self, db):
+    #    self.db = db
 
     def query_for_object(self, domain_type=None, query=None, *args):
         cursor = self.db.cursor()
@@ -43,7 +42,39 @@ class DataSource(object):
     def get_rows(self, query, *args):
         cursor = self.db.cursor()
         cursor.execute(query, args)
+        self.db.commit()
         return cursor.fetchall()
+
+    def execute(self, query, args=[]):
+        cursor = self.db.cursor()
+        cursor.execute(query, args)
+        self.db.commit()
+
+    @staticmethod
+    def get_instance():
+        if DataSource.__DATA_SOURCE is None:
+            DataSource.__DATA_SOURCE = MysqlDataSource()
+        return DataSource.__DATA_SOURCE
+
+
+class MysqlDataSource(DataSource):
+
+    def __init__(self):
+        self.db = MySQLdb.connect(host="localhost",  # your host, usually localhost
+                             user="root",  # your username
+                             passwd="root",  # your password
+                             db="domotica")
+        self.db.autocommit(True)
+
+
+class SQLDBDataSource(object):
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = base_dir.replace("batch", "")
+    __DATABASE_PATH = os.path.join(base_dir, 'db.sqlite3')
+    __CALLS = 0
+
+    def __init__(self):
+        self.db = sqlite3.connect(DataSource.__DATABASE_PATH)
 
     def execute(self, query, *args):
         DataSource.__CALLS +=1

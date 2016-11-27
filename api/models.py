@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 from django.db import models
 from django.utils import timezone
-from api.operations import operation
-from utils.logger import debug
+from utils import logger, raspberry
+from batch.workers import Manager
+import time
 
 
 class Pin(models.Model):
@@ -17,9 +18,9 @@ class Pin(models.Model):
         return "Pin " + str(self.pin_number)
 
     def save(self, *args, **kwargs):
-        operation(self.pin_number, self.output)
+        raspberry.call_pin(self.pin_number, self.output)
         super(Pin, self).save(*args, **kwargs)
-        debug(logger_name="Pin", msg=("Pin: " + str(self.pin_number) + (' Turned On' if self.output else ' Turned Off')))
+        logger.debug(logger_name="Models", msg=("Pin: " + str(self.pin_number) + (' Turned On' if self.output else ' Turned Off')))
 
 
 class Socket(models.Model):
@@ -30,10 +31,6 @@ class Socket(models.Model):
 
     def __str__(self):
         return self.name
-
-    def save(self, *args, **kwargs):
-        super(Socket, self).save(*args, **kwargs)
-        operation(self.rapsPin, self.status)
 
 
 class Event(models.Model):
@@ -54,3 +51,10 @@ class Task(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        logger.info(logger_name="Models", msg="Event Changed")
+        tmp = super(Task, self)
+        tmp.save(*args, **kwargs)
+        tmp.refresh_from_db()
+        Manager.update_task(self.id)

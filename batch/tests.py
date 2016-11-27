@@ -24,11 +24,11 @@ class DomainTest(unittest.TestCase):
         Task.load()
         task = Task.get_task(1)
         self.assertIsNotNone(task)
-        self.assertTrue(len(task.events_id) == 3)
+        self.assertTrue(len(task.events_id) == 4)
 
         task = Task.get_task(2)
         self.assertIsNotNone(task)
-        self.assertTrue(len(task.events_id) == 1)
+        self.assertTrue(len(task.events_id) == 4)
 
 
 class DateUtilsTest(unittest.TestCase):

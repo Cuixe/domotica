@@ -1,6 +1,6 @@
 from batch.dao import DataSource
 from datetime import datetime
-from utils import logger
+from utils import logger, raspberry
 
 
 class Domain:
@@ -15,8 +15,8 @@ class Domain:
 class Pin(Domain):
     __PINS = {}
     __ALL = "SELECT id, pin_number, output, type FROM api_pin"
-    __DETAIL = __ALL + " WHERE = ?"
-    __UPDATE = "UPDATE api_pin SET output=? WHERE id=?"
+    __DETAIL = __ALL + " WHERE = %s"
+    __UPDATE = "UPDATE api_pin SET output=%s WHERE id=%s"
 
     def __init__(self, id=None, pin_number=None, output=False, type=None):
         self.id = id
@@ -29,11 +29,13 @@ class Pin(Domain):
 
     def turn_on(self):
         self.output = True
+        raspberry.call_pin(self.pin_number, self.output)
         self.__update()
         logger.debug("Pin: " + str(self.pin_number) + " turned on")
 
     def turn_off(self):
         self.output = False
+        raspberry.call_pin(self.pin_number, self.output)
         self.__update()
         logger.debug("Pin: " + str(self.pin_number) + " turned off")
 
@@ -45,7 +47,7 @@ class Pin(Domain):
 
     def __update(self):
         data_source = DataSource.get_instance()
-        data_source.execute(Pin.__UPDATE, self.output, self.id)
+        data_source.execute(Pin.__UPDATE, [1 if self.output else 0, self.id])
 
     @staticmethod
     def load():
@@ -66,7 +68,7 @@ class Pin(Domain):
 class Event(Domain):
     __EVENTS = {}
     __ALL = "SELECT id, pin_id, name, event_output FROM api_event"
-    __DETAIL = __ALL + " WHERE id = ?"
+    __DETAIL = __ALL + " WHERE id = %s"
 
     def __init__(self, id=None, pin_id=None, name=None, event_output=False):
         self.id = id
@@ -101,7 +103,7 @@ class Task(Domain):
     __ALL = "select api_task.id, api_task.name, api_task.execution_time, api_task.execution_days, " \
             "api_task_events.event_id  from api_task, api_task_events " \
             "where api_task_events.task_id = api_task.id"
-    __DETAIL = __ALL + " AND api_task.id = ?"
+    __DETAIL = __ALL + " AND api_task.id = %s"
 
     def __init__(self, id=None, name=None, execution_time=None, execution_days="", events_id=[]):
         self.id = id
@@ -124,7 +126,6 @@ class Task(Domain):
                 pin.turn_off()
         logger.debug("Task: " + self.name + " done")
 
-
     @staticmethod
     def load():
         Task.__TASKS.clear()
@@ -137,7 +138,7 @@ class Task(Domain):
                 task = Task.__TASKS[task_id]
                 task.events_id.add(row[4])
             else:
-                task = Task(id=row[0], name=row[1], execution_time=row[2], execution_days=row[3])
+                task = Task(id=row[0], name=row[1], execution_time=str(row[2]), execution_days=row[3])
                 task.events_id.add(row[4])
                 Task.__TASKS[task.id] = task
                 Task.__TASK_LIST.append(task)
@@ -145,10 +146,8 @@ class Task(Domain):
 
     @staticmethod
     def get_task(task_id, update=False):
-        if len(Task.__TASKS) == 0:
+        if len(Task.__TASKS) == 0 or update:
             Task.load()
-        elif update:
-            print 'updating'
         return Task.__TASKS[task_id]
 
     @staticmethod
