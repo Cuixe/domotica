@@ -9,12 +9,15 @@ from utils import logger
 class Manager:
     QUEUED_TASK = {}
     BEFORE_TASKS = {}
+    MAIN_TIMER = None
 
     def __init__(self):
         pass
 
     @staticmethod
     def start_tasks():
+        logger.info(logger_name="Manager", msg="Starting tasks")
+        Task.load()
         tasks = Task.get_task_list()
         for task in tasks:
             Manager.__create_new_timer_task(task)
@@ -22,6 +25,9 @@ class Manager:
         logger.debug(logger_name="Manager", msg="Task executed: " + str(len(Manager.BEFORE_TASKS)))
         Manager.BEFORE_TASKS = OrderedDict(sorted(Manager.BEFORE_TASKS.items()))
         Manager.execute_before_task()
+        Manager.MAIN_TIMER = threading.Timer(interval=86400, function=Manager.start_tasks)
+        Manager.MAIN_TIMER.start()
+        logger.info(logger_name="Manager", msg="Task will be executed again on 86400 secons")
 
 
     @staticmethod
