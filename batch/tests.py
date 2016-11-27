@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from batch.workers import Manager
 import time
 import collections
+from utils import logger
 
 
 class DomainTest(unittest.TestCase):
@@ -75,15 +76,16 @@ class ManagerTest(unittest.TestCase):
             task.execution_days = day
             index += 2
         manager = Manager()
+        logger.debug(logger_name="TEST", msg="Starting Test")
         manager.start_tasks()
-        print datetime.now().strftime(" %H:%M:%S")
         for task in tasks:
-            time.sleep(2)
+            time.sleep(3)
             for event_id in task.events_id:
                 event = Event.get_event(event_id)
                 pin = Pin.get_pin(event.pin_id)
                 self.assertEqual(event.event_output, pin.output,
-                                 msg=task.name + ": " + str(event.event_output) + " != " + str(pin.output))
+                                 msg=(task.name + ": Pin:" + str(pin.pin_number) + str(event.event_output) + " != " + str(pin.output)))
+                print str(pin.pin_number) + " done"
 
     def before_task_test(self):
         dictionary = {}

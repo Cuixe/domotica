@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils import timezone
 from api.operations import operation
+from utils.logger import debug
 
 
 class Pin(models.Model):
@@ -18,6 +19,7 @@ class Pin(models.Model):
     def save(self, *args, **kwargs):
         operation(self.pin_number, self.output)
         super(Pin, self).save(*args, **kwargs)
+        debug(logger_name="Pin", msg=("Pin: " + str(self.pin_number) + (' Turned On' if self.output else ' Turned Off')))
 
 
 class Socket(models.Model):
