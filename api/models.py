@@ -1,23 +1,60 @@
 from __future__ import unicode_literals
 from django.db import models
 from django.utils import timezone
-from raspberry.operations import operation
+from utils import logger, raspberry
+from batch.workers import Manager
+import time
+
+
+class Pin(models.Model):
+    pin_number = models.IntegerField(default=0)
+    output = models.BooleanField(default=False)
+    type = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ('pin_number',)
+
+    def __str__(self):
+        return "Pin " + str(self.pin_number)
+
+    def save(self, *args, **kwargs):
+        raspberry.call_pin(self.pin_number, self.output)
+        super(Pin, self).save(*args, **kwargs)
+        logger.debug(logger_name="Models", msg=("Pin: " + str(self.pin_number) + (' Turned On' if self.output else ' Turned Off')))
 
 
 class Socket(models.Model):
     owner = models.ForeignKey('auth.User', related_name='snippets', on_delete=models.CASCADE)
-    name = models.TextField(default="", max_length=100)
-    number = models.IntegerField(default=0)
-    rapsPin = models.IntegerField(default=0)
-    status = models.BooleanField(default=False)
+    pin = models.ForeignKey(Pin)
+    name = models.CharField(max_length=20, default="")
+    socket_number = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.name
+
+
+class Event(models.Model):
+    pin = models.ForeignKey(Pin)
+    name = models.CharField(max_length=20, default="")
+    description = models.TextField(default="")
+    event_output = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+
+class Task(models.Model):
+    name = models.CharField(max_length=20, default="")
+    execution_time = models.TimeField(default=timezone.now)
+    execution_days = models.CharField(max_length=20, default="")
+    events = models.ManyToManyField(Event)
+
+    def __str__(self):
+        return self.name
 
     def save(self, *args, **kwargs):
-        super(Socket, self).save(*args, **kwargs)
-        operation(self.rapsPin, self.status)
-
-
-class SocketWorker(models.Model):
-    socket = models.ForeignKey(Socket, on_delete=models.CASCADE)
-    executionTime = models.TimeField(default=timezone.now)
-    newStatus = models.BooleanField(default=False)
-    frequency = models.TextField(default="")
+        logger.info(logger_name="Models", msg="Event Changed")
+        tmp = super(Task, self)
+        tmp.save(*args, **kwargs)
+        tmp.refresh_from_db()
+        Manager.update_task(self.id)

@@ -18,7 +18,7 @@
         function init() {
 
             $.getJSON({
-                url:"http://localhost:8000/domotica/sockets/",
+                url:"/api/sockets/",
                 success:function(json) {
                     sockets = json;
                     renderOptions(json)
@@ -39,15 +39,15 @@
                     type: "checkbox",
                     id: jSocket.id,
                     name: socketName,
-                    checked: jSocket.status
+                    checked: jSocket.pin.output
                 });
                 sockets["socket"+jSocket.id] = jSocket;
                 listContainer.append(check);
                 container.append(listContainer);
                 check.on("switchChange.bootstrapSwitch", function(event, state) {
                     var data =sockets["socket"+this.id];
-                    data.status = state;
-                    update(data.id, data);
+                    data.pin.output = state;
+                    update(data.pin);
                 });
                 check.bootstrapSwitch();
             }
@@ -60,10 +60,6 @@
             return list;
         }
 
-        function createText() {
-
-        }
-
         function addCheck(check) {
             var container = $("#sockets");
             var listElement = $('<li></li>').attr({class:'list-group-item'});
@@ -71,14 +67,12 @@
             container.append(listElement);
         }
 
-        function update(id, data) {
+        function update(data) {
             $.ajax({
-                url: 'http://localhost:8000/domotica/sockets/' + id + '/',
+                url: '/api/pin/' + data.id + '/',
                 data: data,
                 method:'PUT',
                 dataType: 'json',
-                password:'Cuixe360',
-                username:'alverik',
                 success: function(result) {
                     console.log(result);
                 }

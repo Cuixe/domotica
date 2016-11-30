@@ -1,6 +1,8 @@
 from django.contrib import admin
-from api.models import Socket, SocketWorker
+from api.models import *
 # Register your models here.
 
 admin.site.register(Socket)
-admin.site.register(SocketWorker)
+admin.site.register(Task)
+admin.site.register(Event)
+admin.site.register(Pin)
