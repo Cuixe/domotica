@@ -50,12 +50,18 @@ class Pin(Domain):
         data_source.execute(Pin.__UPDATE, [1 if self.output else 0, self.id])
 
     @staticmethod
-    def load():
+    def load(execute=False):
         logger.debug(logger_name="Pin", msg="Loading pins")
         Pin.__PINS.clear()
         data_source = DataSource.get_instance()
         Pin.__PINS = data_source.query_for_dictionary(domain_type=Pin, query=Pin.__ALL)
         logger.info(logger_name="Pin", msg="Pins loaded: " + str(len(Pin.__PINS)))
+        if execute:
+            for pin in Pin.__PINS:
+                if pin.output:
+                    pin.turn_on()
+                else:
+                    pin.turn_off()
 
     @staticmethod
     def get_pin(pin_id):

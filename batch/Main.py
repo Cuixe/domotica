@@ -1,5 +1,6 @@
 from utils import logger
 from batch.workers import Manager
+from batch.domain import Pin
 
 
 class Main:
@@ -11,6 +12,7 @@ class Main:
             logger.info(logger_name="BATCH", msg="Batch was already Initialized")
         else:
             Main.__INIT = True
+            Pin.load(execute=True)
             logger.info(logger_name="BATCH", msg="Iniciando Proceso Batch")
             Manager.start_tasks()
 
