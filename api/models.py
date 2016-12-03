@@ -3,7 +3,6 @@ from django.db import models
 from django.utils import timezone
 from utils import logger, raspberry
 from batch.workers import Manager
-import time
 
 
 class Pin(models.Model):
@@ -24,7 +23,7 @@ class Pin(models.Model):
 
 
 class Socket(models.Model):
-    owner = models.ForeignKey('auth.User', related_name='snippets', on_delete=models.CASCADE)
+    owner = models.ForeignKey('auth.User', related_name='snippets')
     pin = models.ForeignKey(Pin)
     name = models.CharField(max_length=20, default="")
     socket_number = models.IntegerField(default=0)
@@ -48,6 +47,7 @@ class Task(models.Model):
     execution_time = models.TimeField(default=timezone.now)
     execution_days = models.CharField(max_length=20, default="")
     events = models.ManyToManyField(Event)
+    enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
