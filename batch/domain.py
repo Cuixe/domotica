@@ -102,7 +102,7 @@ class Task(Domain):
     __TASK_LIST = []
     __ALL = "select api_task.id, api_task.name, api_task.execution_time, api_task.execution_days, " \
             "api_task_events.event_id  from api_task, api_task_events " \
-            "where api_task_events.task_id = api_task.id"
+            "where enabled = true and api_task_events.task_id = api_task.id"
     __DETAIL = __ALL + " AND api_task.id = %s"
 
     def __init__(self, id=None, name=None, execution_time=None, execution_days="", events_id=[]):
