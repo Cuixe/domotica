@@ -28,7 +28,7 @@ class Manager:
         seconds = math.ceil(seconds)
         Manager.MAIN_TIMER = threading.Timer(interval=seconds, function=Manager.start_tasks)
         Manager.MAIN_TIMER.start()
-        logger.info(logger_name="Manager", msg="Task will be executed again on " + seconds + " seconds")
+        logger.info(logger_name="Manager", msg="Task will be executed again on " + str(seconds) + " seconds")
 
     @staticmethod
     def update_task(task_id=None, async=True):
