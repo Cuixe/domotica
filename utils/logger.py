@@ -24,3 +24,7 @@ def debug(logger_name="Domotica", msg=""):
 
 def info(logger_name="Domotica", msg=""):
     __get_logger(logger_name=logger_name, loggin_level=logging.INFO).info(msg)
+
+
+def error(logger_name="Domotica", msg=""):
+    __get_logger(logger_name=logger_name, loggin_level=logging.INFO).error(msg)

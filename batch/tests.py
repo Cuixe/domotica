@@ -1,6 +1,7 @@
 import unittest
 from batch.domain import Pin, Event, Task
 from batch.dateutils import cast_time_to_datetime, get_difference_in_seconds
+from batch.networking import Message
 from datetime import datetime, timedelta
 from batch.workers import Manager
 import time
@@ -8,12 +9,63 @@ import collections
 from utils import logger
 
 
-class DomainTest(unittest.TestCase):
+class PinTest(unittest.TestCase):
 
-    def pin_test(self):
+    def get_pin_new_create_test(self):
+        pin = Pin.get_pin(pin_id=1)
+        self.assertEqual(1, pin.id)
+        self.assertEqual(14, pin.pin_number)
+
+    def get_pin_loaded_and_updated_test(self):
+        Pin.load()
+        pin = Pin.get_pin(pin_id=1, update=True)
+        self.assertEqual(1, pin.id)
+        self.assertEqual(14, pin.pin_number)
+
+    def get_pin_loaded_test(self):
+        Pin.load()
+        pin = Pin.get_pin(pin_id=1)
+        self.assertEqual(1, pin.id)
+        self.assertEqual(14, pin.pin_number)
+
+    def pin_load_test(self):
         Pin.load()
         pin = Pin.get_pin(1)
         self.assertIsNotNone(pin)
+
+
+class EventTest(unittest.TestCase):
+
+    def get_event_test(self):
+        event = Event.get_event(1)
+        self.assertIsNotNone(event)
+
+    def load_events_test(self):
+        Event.load()
+        event = Event.get_event(1)
+        self.assertIsNotNone(event)
+
+    def get_events_for_task_test(self):
+        events = Event.get_events_by_task(1)
+        self.assertIsNotNone(events)
+        self.assertEqual(4, len(events))
+
+
+class TaskTest(unittest.TestCase):
+
+    def get_task_new_created_test(self):
+        task = Task.get_task(task_id=1)
+        self.assertIsNotNone(task)
+        self.assertEqual(4, len(task.events))
+
+    def get_task_new_created_test(self):
+        Task.load()
+        task = Task.get_task(1)
+        self.assertIsNotNone(task)
+        self.assertEqual(4, len(task.events))
+
+
+class DomainTest(unittest.TestCase):
 
     def event_test(self):
         Event.load()
@@ -103,6 +155,23 @@ class ManagerTest(unittest.TestCase):
             print str(task.name)
             index += 1
 
+
+class MessageTest(unittest.TestCase):
+
+    def to_string_test(self):
+        message = Message(element='pin', event='turnOn', id='1')
+        string = str(message)
+        self.assertIsNotNone(string)
+        print string
+
+    def to_string_test(self):
+        message = Message(data="{element:pin,event:turnOn,id:1}")
+        self.assertEqual('pin', message.element)
+        self.assertEqual('turnOn', message.event)
+        self.assertEqual('1', message.id)
+        string = str(message)
+        self.assertIsNotNone(string)
+        print string
 
 if __name__ == '__main__':
     unittest.main()

@@ -15,7 +15,8 @@ class DataSource(object):
         cursor.execute(query, args)
         rows = cursor.fetchall()
         domain = domain_type()
-        return domain.fill(rows[0])
+        domain.fill(rows[0])
+        return domain
 
     def query_for_dictionary(self, domain_type=None, query=None, *args):
         dictionary = {}
