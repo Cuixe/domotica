@@ -6,8 +6,8 @@ from collections import OrderedDict
 from utils import logger
 
 
-class Manager:
-    QUEUED_TASK = {}
+class TaskManager:
+    QUEUED_TIMER_TASKS = {}
     BEFORE_TASKS = {}
     MAIN_TIMER = None
 
@@ -18,30 +18,29 @@ class Manager:
     def start_tasks():
         logger.info(logger_name="Manager", msg="Starting tasks")
         Task.load()
-        tasks = Task.get_task_list()
+        tasks = Task.load()
         for task in tasks:
-            Manager.__create_new_timer_task(task)
-        logger.debug(logger_name="Manager", msg="Task created: " + str(len(Manager.QUEUED_TASK)))
-        logger.debug(logger_name="Manager", msg="Task executed: " + str(len(Manager.BEFORE_TASKS)))
-        Manager.BEFORE_TASKS = OrderedDict(sorted(Manager.BEFORE_TASKS.items()))
-        Manager.execute_before_task()
-        Manager.MAIN_TIMER = threading.Timer(interval=86400, function=Manager.start_tasks)
-        Manager.MAIN_TIMER.start()
+            TaskManager.__create_new_timer_task(task)
+        logger.debug(logger_name="Manager", msg="Task created: " + str(len(TaskManager.QUEUED_TIMER_TASKS)))
+        logger.debug(logger_name="Manager", msg="Task executed: " + str(len(TaskManager.BEFORE_TASKS)))
+        TaskManager.BEFORE_TASKS = OrderedDict(sorted(TaskManager.BEFORE_TASKS.items()))
+        TaskManager.execute_before_task()
+        TaskManager.MAIN_TIMER = threading.Timer(interval=86400, function=TaskManager.start_tasks)
+        TaskManager.MAIN_TIMER.start()
         logger.info(logger_name="Manager", msg="Task will be executed again on 86400 secons")
-
 
     @staticmethod
     def update_task(task_id=None, async=True):
         if async:
-            timer = threading.Timer(1, Manager.update_task, [task_id, False])
+            timer = threading.Timer(1, TaskManager.update_task, [task_id, False])
             timer.start()
         else:
-            if task_id in Manager.QUEUED_TASK:
-                Manager.QUEUED_TASK[task_id].cancel()
-                del Manager.QUEUED_TASK[task_id]
+            if task_id in TaskManager.QUEUED_TIMER_TASKS:
+                TaskManager.QUEUED_TIMER_TASKS[task_id].cancel()
+                del TaskManager.QUEUED_TIMER_TASKS[task_id]
             task = Task.get_task(task_id=task_id, update=True)
-            Manager.__create_new_timer_task(task)
-            Manager.execute_before_task()
+            TaskManager.__create_new_timer_task(task)
+            TaskManager.execute_before_task()
 
     @staticmethod
     def __create_new_timer_task(task):
@@ -54,18 +53,19 @@ class Manager:
                 seconds = math.ceil(seconds)
                 timer = threading.Timer(interval=seconds, function=task.execute_tasks)
                 timer.name = "Task_" + str(task.id)
-                Manager.QUEUED_TASK[task.id] = timer
+                TaskManager.QUEUED_TIMER_TASKS[task.id] = timer
                 timer.start()
-                logger.info(logger_name="Manager", msg=(task.name + " will be executed in " + str(seconds) + "seconds"))
+                logger.info(logger_name="Manager", msg=(task.name + " will be executed in " + str(seconds) +
+                            "seconds and will execute " + str(len(task.events)) + " tasks"))
             else:
-                if seconds not in Manager.BEFORE_TASKS:
+                if seconds not in TaskManager.BEFORE_TASKS:
                     seconds += -.00001
-                    Manager.BEFORE_TASKS[seconds] = task
+                    TaskManager.BEFORE_TASKS[seconds] = task
 
     @staticmethod
     def execute_before_task():
-        Manager.BEFORE_TASKS = OrderedDict(sorted(Manager.BEFORE_TASKS.items()))
-        for key, task in Manager.BEFORE_TASKS.iteritems():
+        TaskManager.BEFORE_TASKS = OrderedDict(sorted(TaskManager.BEFORE_TASKS.items()))
+        for key, task in TaskManager.BEFORE_TASKS.iteritems():
             task.execute_tasks()
             logger.info(logger_name="Manager", msg=(task.name + " was already executed "))
-            del Manager.BEFORE_TASKS[key]
+            del TaskManager.BEFORE_TASKS[key]

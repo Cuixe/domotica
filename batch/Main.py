@@ -1,5 +1,5 @@
 from utils import logger
-from batch.workers import Manager
+from batch.workers import TaskManager
 
 
 class Main:
@@ -12,5 +12,5 @@ class Main:
         else:
             Main.__INIT = True
             logger.info(logger_name="BATCH", msg="Iniciando Proceso Batch")
-            Manager.start_tasks()
+            TaskManager.start_tasks()
 

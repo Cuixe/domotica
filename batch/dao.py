@@ -7,6 +7,8 @@ from utils.logger import debug
 class DataSource(object):
     __DATA_SOURCE = None
 
+    __SQL_TYPE = "mysql"
+
     #def __init__(self, db):
     #    self.db = db
 
@@ -15,7 +17,8 @@ class DataSource(object):
         cursor.execute(query, args)
         rows = cursor.fetchall()
         domain = domain_type()
-        return domain.fill(rows[0])
+        domain.fill(rows[0])
+        return domain
 
     def query_for_dictionary(self, domain_type=None, query=None, *args):
         dictionary = {}
@@ -52,9 +55,17 @@ class DataSource(object):
 
     @staticmethod
     def get_instance():
-        if DataSource.__DATA_SOURCE is None:
+        if DataSource.__DATA_SOURCE is not None:
+            return DataSource.__DATA_SOURCE
+        if DataSource.__SQL_TYPE == "mysql":
             DataSource.__DATA_SOURCE = MysqlDataSource()
+        else:
+            DataSource.__DATA_SOURCE = SQLiteDataSource()
         return DataSource.__DATA_SOURCE
+
+    @staticmethod
+    def set_sql_type(sql_type):
+        DataSource.__SQL_TYPE = sql_type
 
 
 class MysqlDataSource(DataSource):
@@ -67,22 +78,27 @@ class MysqlDataSource(DataSource):
         self.db.autocommit(True)
 
 
-class SQLDBDataSource(object):
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    base_dir = base_dir.replace("batch", "")
-    __DATABASE_PATH = os.path.join(base_dir, 'db.sqlite3')
+class SQLiteDataSource(DataSource):
     __CALLS = 0
 
     def __init__(self):
-        self.db = sqlite3.connect(DataSource.__DATABASE_PATH)
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_dir = base_dir.replace("batch", "")
+        __DATABASE_PATH = os.path.join(base_dir, 'db.sqlite3')
+        self.db = sqlite3.connect(__DATABASE_PATH)
 
     def execute(self, query, *args):
-        DataSource.__CALLS +=1
-        debug(logger_name="DataSource", msg=("Call:" + str(DataSource.__CALLS) + " Executing Query " + query + str(args)))
-        cursor = self.db.cursor()
-        cursor.execute(query, args)
-        self.db.commit()
-        self.db.close()
+        query = query.replace("%s", "?")
+        super(SQLiteDataSource, self).execute(query, *args)
+
+    def query_for_object(self, domain_type=None, query=None, *args):
+        query = query.replace("%s", "?")
+        return super(SQLiteDataSource, self).query_for_object(domain_type, query, *args)
+
+    def query_for_list(self, domain_type=None, query=None, *args):
+        query = query.replace("%s", "?")
+        return super(SQLiteDataSource, self).query_for_list(domain_type, query, *args)
+
 
     @staticmethod
     def get_instance():

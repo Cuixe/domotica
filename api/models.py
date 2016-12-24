@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils import timezone
 from utils import logger, raspberry
-from batch.workers import Manager
+from batch.workers import TaskManager
 
 
 class Pin(models.Model):
@@ -57,4 +57,4 @@ class Task(models.Model):
         tmp = super(Task, self)
         tmp.save(*args, **kwargs)
         tmp.refresh_from_db()
-        Manager.update_task(self.id)
+        TaskManager.update_task(self.id)

@@ -1,34 +1,72 @@
 import unittest
 from batch.domain import Pin, Event, Task
 from batch.dateutils import cast_time_to_datetime, get_difference_in_seconds
-from datetime import datetime, timedelta
-from batch.workers import Manager
-import time
-import collections
-from utils import logger
+from datetime import datetime
+from batch.workers import TaskManager
+from batch.dao import DataSource
+
+DataSource.set_sql_type("sqLite")
 
 
-class DomainTest(unittest.TestCase):
+class PinTest(unittest.TestCase):
 
-    def pin_test(self):
-        Pin.load()
+    def get_pin_test(self):
         pin = Pin.get_pin(1)
         self.assertIsNotNone(pin)
+        self.assertEqual(1, pin.id)
 
-    def event_test(self):
-        Event.load()
+    def turn_off_pin_test(self):
+        pin = Pin.get_pin(1)
+        pin.turn_off()
+        pin1 = Pin.get_pin(1)
+        self.assertFalse(pin1.output)
+
+    def turn_on_pin_test(self):
+        pin = Pin.get_pin(1)
+        pin.turn_on()
+        pin1 = Pin.get_pin(1)
+        self.assertTrue(pin1.output)
+
+    def load_pins_test(self):
+        pins = Pin.load()
+        self.assertTrue(len(pins) > 0)
+        pin = pins[0]
+        self.assertIsNotNone(pin.pin_number)
+
+
+class EventTest(unittest.TestCase):
+
+    def get_event_test(self):
         event = Event.get_event(1)
         self.assertIsNotNone(event)
+        self.assertEqual(1, event.id)
+        self.assertIsNotNone(event.pin)
 
-    def task_test(self):
-        Task.load()
+    def load_events_test(self):
+        events = Event.load()
+        self.assertTrue(len(events) > 0)
+        self.assertIsNotNone(events[0])
+
+
+class TaskTest(unittest.TestCase):
+
+    def get_task_test(self):
         task = Task.get_task(1)
         self.assertIsNotNone(task)
-        self.assertTrue(len(task.events_id) == 4)
+        self.assertEqual(1, task.id)
+        self.assertTrue(len(task.events) > 0)
+        self.assertIsNotNone(task.events[0])
 
-        task = Task.get_task(2)
-        self.assertIsNotNone(task)
-        self.assertTrue(len(task.events_id) == 4)
+    def load_tasks_test(self):
+        tasks = Task.load()
+        self.assertTrue(len(tasks) > 0)
+        self.assertIsNotNone(tasks[0])
+
+    def execute_task_test(self):
+        task = Task.get_task(1)
+        task.execute_tasks()
+        for event in task.events:
+            self.assertEqual(event.event_output, event.pin.output)
 
 
 class DateUtilsTest(unittest.TestCase):
@@ -57,52 +95,27 @@ class DateUtilsTest(unittest.TestCase):
 
 class ManagerTest(unittest.TestCase):
 
-    def manager_test(self):
-        index = 1
-        pin = Pin.get_pin(index)
-        while pin is not None:
-            pin.output = (index % 2) is not 0
-            index += 1
-            try:
-                pin = Pin.get_pin(index)
-            except:
-                pin = None
-        tasks = Task.get_task_list()
-        day = str(datetime.today().weekday() + 1)
-        index = 2
+    def prepare_tasks_test(self):
+        tasks = Task.load()
+        awaiting_tasks = 0
         for task in tasks:
-            date = datetime.now() + timedelta(seconds=index)
-            task.execution_time = date.time()
-            task.execution_days = day
-            index += 2
-        manager = Manager()
-        logger.debug(logger_name="TEST", msg="Starting Test")
-        manager.start_tasks()
-        for task in tasks:
-            time.sleep(3)
-            for event_id in task.events_id:
-                event = Event.get_event(event_id)
-                pin = Pin.get_pin(event.pin_id)
-                self.assertEqual(event.event_output, pin.output,
-                                 msg=(task.name + ": Pin:" + str(pin.pin_number) + str(event.event_output) + " != " + str(pin.output)))
-                print str(pin.pin_number) + " done"
+            if ManagerTest.__task_should_be_waiting(task):
+                awaiting_tasks += 1
+        TaskManager.start_tasks()
+        self.assertEqual(awaiting_tasks, len(TaskManager.QUEUED_TIMER_TASKS))
+        self.assertIsNotNone(TaskManager.MAIN_TIMER)
+        for key, timer in TaskManager.QUEUED_TIMER_TASKS.iteritems():
+            timer.cancel()
+        TaskManager.MAIN_TIMER.cancel()
 
-    def before_task_test(self):
-        dictionary = {}
-        dictionary[-7] = Task(name="4")
-        dictionary[-7.5] = Task(name="2")
-        dictionary[-7.49] = Task(name="3")
-        dictionary[-4] = Task(name="6")
-        dictionary[-7.51] = Task(name="1")
-        dictionary[-5] = Task(name="5")
-        dictionary = collections.OrderedDict(sorted(dictionary.items()))
-
-        index = 1
-        for key, task in dictionary.iteritems():
-            self.assertEqual(str(index), task.name)
-            print str(task.name)
-            index += 1
-
+    @staticmethod
+    def __task_should_be_waiting(task):
+        today_datetime = datetime.now()
+        task_datetime = cast_time_to_datetime(task.execution_time)
+        day = datetime.today().weekday() + 1
+        if str(day) in task.execution_days and get_difference_in_seconds(task_datetime, today_datetime) > 0:
+            return True
+        return False
 
 if __name__ == '__main__':
     unittest.main()

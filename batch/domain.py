@@ -13,9 +13,8 @@ class Domain:
 
 
 class Pin(Domain):
-    __PINS = {}
     __ALL = "SELECT id, pin_number, output, type FROM api_pin"
-    __DETAIL = __ALL + " WHERE = %s"
+    __DETAIL = __ALL + " WHERE id = %s"
     __UPDATE = "UPDATE api_pin SET output=%s WHERE id=%s"
 
     def __init__(self, id=None, pin_number=None, output=False, type=None):
@@ -51,107 +50,88 @@ class Pin(Domain):
 
     @staticmethod
     def load():
-        logger.debug(logger_name="Pin", msg="Loading pins")
-        Pin.__PINS.clear()
         data_source = DataSource.get_instance()
-        Pin.__PINS = data_source.query_for_dictionary(domain_type=Pin, query=Pin.__ALL)
-        logger.info(logger_name="Pin", msg="Pins loaded: " + str(len(Pin.__PINS)))
+        return data_source.query_for_list(domain_type=Pin, query=Pin.__ALL)
 
     @staticmethod
     def get_pin(pin_id):
-        logger.debug(logger_name="Pin", msg="Pin requested " + str(pin_id))
-        if len(Pin.__PINS) == 0:
-            Pin.load()
-        return Pin.__PINS[pin_id]
+        data_source = DataSource.get_instance()
+        pin = data_source.query_for_object(Pin, Pin.__DETAIL, pin_id)
+        return pin
 
 
 class Event(Domain):
-    __EVENTS = {}
     __ALL = "SELECT id, pin_id, name, event_output FROM api_event"
     __DETAIL = __ALL + " WHERE id = %s"
+    __EVENTS_BY_TASK = "SELECT api_event.id, pin_id, name, event_output from api_event, api_task_events" \
+                   " WHERE api_event.id = api_task_events.event_id and api_task_events.task_id = %s"
 
     def __init__(self, id=None, pin_id=None, name=None, event_output=False):
         self.id = id
-        self.pin_id = pin_id
+        if pin_id is not None:
+            self.pin = Pin.get_pin(pin_id)
         self.name = name
         self.event_output = event_output
 
     def fill(self, query_result):
         self.id = query_result[0]
-        self.pin_id = query_result[1]
+        self.pin = Pin.get_pin(query_result[1])
         self.name = query_result[2]
         self.event_output = query_result[3] == 1
 
     @staticmethod
     def load():
-        logger.debug(logger_name="Event", msg="Loading events")
-        Event.__EVENTS.clear()
         data_source = DataSource.get_instance()
-        Event.__EVENTS = data_source.query_for_dictionary(Event, Event.__ALL)
-        logger.info(logger_name="Event", msg="Events loaded: " + str(len(Event.__EVENTS)))
+        return data_source.query_for_list(Event, Event.__ALL)
 
     @staticmethod
     def get_event(event_id):
-        if len(Event.__EVENTS) == 0:
-            Event.load()
-        return Event.__EVENTS[event_id]
+        data_source = DataSource.get_instance()
+        return data_source.query_for_object(Event, Event.__DETAIL, event_id)
+
+    @staticmethod
+    def get_events_by_task(task_id):
+        data_source = DataSource.get_instance()
+        return data_source.query_for_list(Event, Event.__EVENTS_BY_TASK, task_id)
 
 
 class Task(Domain):
-    __TASKS = {}
-    __TASK_LIST = []
-    __ALL = "select api_task.id, api_task.name, api_task.execution_time, api_task.execution_days, " \
-            "api_task_events.event_id  from api_task, api_task_events " \
-            "where enabled = true and api_task_events.task_id = api_task.id"
-    __DETAIL = __ALL + " AND api_task.id = %s"
+    __ALL = "select id, name, execution_time, execution_days from api_task"
+    __DETAIL = __ALL + " where id = %s"
 
-    def __init__(self, id=None, name=None, execution_time=None, execution_days="", events_id=[]):
+    def __init__(self, id=None, name=None, execution_time=None, execution_days="",):
         self.id = id
         self.name = name
         if execution_time is not None:
             self.execution_time = datetime.strptime(execution_time, "%H:%M:%S").time()
         self.execution_days = execution_days
-        self.events_id = set(events_id)
+        self.events = Event.get_events_by_task(self.id)
+
+    def fill(self, query_result):
+        self.id = query_result[0]
+        self.name = query_result[1]
+        self.execution_time = datetime.strptime(query_result[2], "%H:%M:%S").time()
+        self.execution_days = query_result[3]
+        self.events = Event.get_events_by_task(self.id)
 
     def execute_tasks(self):
         logger.info(logger_name="Task", msg="Executing task: " + self.name)
-        logger.debug(logger_name="Task", msg="Events to execute: " + str(self.events_id))
-        for event_id in self.events_id:
-            logger.debug(logger_name="Task", msg="Execution Event : " + str(event_id))
-            event = Event.get_event(event_id)
-            pin = Pin.get_pin(event.pin_id)
+        for event in self.events:
+            logger.debug(logger_name="Task", msg="Execution Event : " + str(event.name))
             if event.event_output:
-                pin.turn_on()
+                event.pin.turn_on()
             else:
-                pin.turn_off()
-        logger.debug("Task: " + self.name + " done")
+                event.pin.turn_off()
+        logger.debug(logger_name="Task", msg="Task: " + self.name + " done")
 
     @staticmethod
     def load():
-        Task.__TASKS.clear()
-        del Task.__TASK_LIST[:]
         data_source = DataSource.get_instance()
-        rows = data_source.get_rows(Task.__ALL)
-        for row in rows:
-            task_id = row[0]
-            if task_id in Task.__TASKS:
-                task = Task.__TASKS[task_id]
-                task.events_id.add(row[4])
-            else:
-                task = Task(id=row[0], name=row[1], execution_time=str(row[2]), execution_days=row[3])
-                task.events_id.add(row[4])
-                Task.__TASKS[task.id] = task
-                Task.__TASK_LIST.append(task)
-        logger.info(logger_name="Task", msg="Task loaded: " + str(len(Task.__TASKS)))
+        return data_source.query_for_list(Task, Task.__ALL)
 
     @staticmethod
-    def get_task(task_id, update=False):
-        if len(Task.__TASKS) == 0 or update:
-            Task.load()
-        return Task.__TASKS[task_id]
+    def get_task(task_id):
+        data_source = DataSource.get_instance()
+        task = data_source.query_for_object(Task, Task.__DETAIL, task_id)
+        return task
 
-    @staticmethod
-    def get_task_list():
-        if len(Task.__TASKS) == 0:
-            Task.load()
-        return Task.__TASK_LIST
