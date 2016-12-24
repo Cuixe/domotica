@@ -38,7 +38,7 @@ class TaskManager:
             if task_id in TaskManager.QUEUED_TIMER_TASKS:
                 TaskManager.QUEUED_TIMER_TASKS[task_id].cancel()
                 del TaskManager.QUEUED_TIMER_TASKS[task_id]
-            task = Task.get_task(task_id=task_id, update=True)
+            task = Task.get_task(task_id=task_id)
             TaskManager.__create_new_timer_task(task)
             TaskManager.execute_before_task()
 
