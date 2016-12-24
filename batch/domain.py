@@ -103,14 +103,14 @@ class Task(Domain):
         self.id = id
         self.name = name
         if execution_time is not None:
-            self.execution_time = datetime.strptime(execution_time, "%H:%M:%S").time()
+            self.execution_time = datetime.strptime(str(execution_time), "%H:%M:%S").time()
         self.execution_days = execution_days
         self.events = Event.get_events_by_task(self.id)
 
     def fill(self, query_result):
         self.id = query_result[0]
         self.name = query_result[1]
-        self.execution_time = datetime.strptime(query_result[2], "%H:%M:%S").time()
+        self.execution_time = datetime.strptime(str(query_result[2]), "%H:%M:%S").time()
         self.execution_days = query_result[3]
         self.events = Event.get_events_by_task(self.id)
 
