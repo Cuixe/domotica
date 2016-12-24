@@ -4,6 +4,7 @@ from batch.domain import Task
 import math
 from collections import OrderedDict
 from utils import logger
+from datetime import timedelta
 
 
 class TaskManager:
@@ -25,9 +26,13 @@ class TaskManager:
         logger.debug(logger_name="Manager", msg="Task executed: " + str(len(TaskManager.BEFORE_TASKS)))
         TaskManager.BEFORE_TASKS = OrderedDict(sorted(TaskManager.BEFORE_TASKS.items()))
         TaskManager.execute_before_task()
-        TaskManager.MAIN_TIMER = threading.Timer(interval=86400, function=TaskManager.start_tasks)
+        now = datetime.now() + timedelta(days=1)
+        tomorrow = datetime(year=now.year, month=now.month, day=now.day, hour=0, minute=0, second=0)
+        seconds = get_difference_in_seconds(tomorrow, datetime.now())
+        seconds = math.ceil(seconds)
+        TaskManager.MAIN_TIMER = threading.Timer(interval=seconds, function=TaskManager.start_tasks)
         TaskManager.MAIN_TIMER.start()
-        logger.info(logger_name="Manager", msg="Task will be executed again on 86400 secons")
+        logger.info(logger_name="Manager", msg="Manager Task will be executed again on " + seconds + " seconds")
 
     @staticmethod
     def update_task(task_id=None, async=True):
